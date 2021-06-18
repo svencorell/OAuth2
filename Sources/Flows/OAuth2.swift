@@ -374,7 +374,13 @@ open class OAuth2: OAuth2Base {
 					let data = try response.responseData()
 					let json = try self.parseRefreshTokenResponseData(data)
 					if response.response.statusCode >= 400 {
-						self.clientConfig.refreshToken = nil
+						//fail  to get new accessToken => invalidate all tokens
+                        self.clientConfig.refreshToken = nil
+                        self.clientConfig.accessToken = nil
+                        if (self.useKeychain) {
+                            self.forgetTokens()
+                        }
+                        
 						throw OAuth2Error.generic("Failed with status \(response.response.statusCode)")
 					}
 					self.logger?.debug("OAuth2", msg: "Did use refresh token for access token [\(nil != self.clientConfig.accessToken)]")
@@ -385,6 +391,12 @@ open class OAuth2: OAuth2Base {
 				}
 				catch let error {
 					self.logger?.debug("OAuth2", msg: "Error refreshing access token: \(error)")
+                    //fail  to get new accessToken => invalidate all tokens
+                    self.clientConfig.refreshToken = nil
+                    self.clientConfig.accessToken = nil
+                    if (self.useKeychain) {
+                        self.forgetTokens()
+                    }
 					callback(nil, error.asOAuth2Error)
 				}
 			}
